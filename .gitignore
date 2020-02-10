@@ -3,3 +3,8 @@
 ################################################################################
 
 /.vs
+/F4ST.MultiLang/.vs
+/F4ST.MultiLang/F4ST.MultiLang/bin
+/F4ST.MultiLang/F4ST.MultiLang/obj
+/F4ST.MultiLang/Test/bin
+/F4ST.MultiLang/Test/obj

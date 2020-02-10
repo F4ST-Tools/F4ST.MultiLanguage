@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework> 
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <License>https://opensource.org/licenses/AGPL-3.0</License>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageDescription>Multi Language functionality for F4ST</PackageDescription> 
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="F4ST.Common" Version="1.0.10" />
+  </ItemGroup>
+
+</Project>

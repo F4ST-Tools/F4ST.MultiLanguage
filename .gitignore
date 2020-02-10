@@ -8,3 +8,10 @@
 /F4ST.MultiLang/F4ST.MultiLang/obj
 /F4ST.MultiLang/Test/bin
 /F4ST.MultiLang/Test/obj
+
+/.vs
+/src/.vs
+/src/F4ST.MultiLang/bin
+/src/F4ST.MultiLang/obj
+/src/Test/bin
+/src/Test/obj

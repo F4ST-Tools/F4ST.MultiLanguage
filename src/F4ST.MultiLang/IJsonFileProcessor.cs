@@ -2,85 +2,61 @@
 using System.IO;
 using System.Threading.Tasks;
 using F4ST.Common.Containers;
-using Newtonsoft.Json; 
+using Newtonsoft.Json;
 
 namespace F4ST.MultiLang
 {
-    public interface IJsonFileProcessor:ISingleton
+    public interface IJsonFileProcessor : ISingleton
     {
-        Dictionary<string, Dictionary<string, string>> FilesProcessDirectory(string targetDirectory);
+        dynamic R { get; }
+
+        string this[string key] { get; }
+        string this[string resource, string key] { get; }
+        string this[string resource, string key, string culture] { get; }
 
         /// <summary>
-        /// Process file directory and result culture list
+        ///  Get Resource by key name and current culture
         /// </summary>
-        /// <param name="targetDirectory">path</param>
-        /// <returns>return file culture info</returns>
+        /// <param name="resource">Resource name</param>
+        /// <param name="key">Key</param>
+        /// <param name="culture">Culture</param>
+        /// <returns>return resource value</returns>
+        string GetResource(string resource, string key, string culture);
 
-        List<CultureModel> CultureProcessDirectory(string targetDirectory);
         /// <summary>
-        /// Process all directory passed in, recurse on any directories  
+        ///  Get Resource by key name and current culture
         /// </summary>
-        /// <param name="targetDirectory"></param>
+        /// <param name="resource">Resource name</param>
+        /// <param name="key">Key</param>
+        /// <returns>return resource value</returns>
+        string GetResource(string resource, string key);
+
+        /// <summary>
+        ///  Get Resource by key name and current culture
+        /// </summary>
+        /// <param name="key">Key splitting by dot, ex: Global.Menu1</param>
+        /// <returns>return resource value</returns>
+        string GetResource(string key);
+
+        /// <summary>
+        /// Get list of available culture for resource
+        /// </summary>
+        /// <param name="resource">Resource name</param>
         /// <returns></returns>
-        List<string> ProcessDirectory(string targetDirectory);
-
-        /// <summary>
-        /// Process all files in the directory passed in, recurse on any directories 
-        /// that are found, and process the files they contain.
-        /// </summary>
-        /// <param name="targetDirectory"></param>
-        /// <returns></returns>
-        IEnumerable<string> ProcessDirectoryFiles(string targetDirectory);
-
-        /// <summary>
-        /// Insert logic for processing found files here.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        string ProcessFile(string path);
-
-        /// <summary>
-        /// return all files in the directory passed in
-        /// </summary>
-        /// <param name="targetDirectory"></param>
-        /// <returns></returns>
-        IEnumerable<string> GetFiles(string targetDirectory);
-
-        /// <summary>
-        /// process file content in directory
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns>return culture & filename & file content </returns>
-        (string, string, string) GetContentFile(string path);
+        IReadOnlyList<string> GetCultures(string resource);
 
         /// <summary>
         /// create resource file in directory
         /// </summary>
-        /// <param name="path">path</param>
-        /// <param name="resourceName">resourceName</param>
+        /// <param name="resource">resourceName</param>
         /// <param name="culture">culture</param>
-        /// <param name="alignment">ltr/rtl</param> 
-        Task CreateFileProccess(
-            string path, 
-            string resourceName, 
-            string culture,
-            string alignment,
-            List<ResourceModel> data);
+        /// <param name="isRtl">ltr/rtl</param> 
+        /// <param name="data">resources</param> 
+        void AddResourceLanguage(string resource, string culture, bool isRtl, Dictionary<string, string> data);
 
         /// <summary>
-        /// Returns the absolute path for the specified path string.
+        /// Reload all resources
         /// </summary>
-        /// <param name="directory">directory</param>
-        /// <returns>Returns the absolute path for the specified path string.</returns>
-        string FullPath(string directory);
-
-        /// <summary>
-        /// create file name 
-        /// </summary>
-        /// <param name="resourceName">resource name</param>
-        /// <param name="culture">culture</param>
-        /// <param name="alignment">ltr/rtl</param>
-        /// <returns>file name</returns>
-        string GetFileName(string resourceName, string culture, string alignment);
+        void Reload();
     }
 }

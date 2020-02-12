@@ -8,14 +8,14 @@
     <Content Remove="Resources\Globals\Golbals.en.ltr.json" />
     <Content Remove="Resources\Globals\Golbals.fa.rtl.json" />
     <Content Remove="Resources\Globals\Golbals.us.ltr.json" />
-    <Content Remove="Resources\Menus\Menus.fa.ltr.json" />
+    <Content Remove="Resources\Menus\Menus.fa.rtl.json" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Resources\Globals\Golbals.en.ltr.json" />
     <None Include="Resources\Globals\Golbals.fa.rtl.json" />
     <None Include="Resources\Globals\Golbals.us.ltr.json" />
-    <None Include="Resources\Menus\Menus.fa.ltr.json" />
+    <None Include="Resources\Menus\Menus.fa.rtl.json" />
   </ItemGroup>
 
   <ItemGroup>

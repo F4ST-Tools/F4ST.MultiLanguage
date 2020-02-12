@@ -1,85 +1,200 @@
 ﻿using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
-using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
-//using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
-//using PitProject.Models;
 
 namespace F4ST.MultiLang
 {
-    public class JsonFileProcessor:IJsonFileProcessor
+    public class JsonFileProcessor : IJsonFileProcessor
     {
-       // private readonly IHostEnvironment _hostingEnvironment;
-        public JsonFileProcessor()//(IHostingEnvironment hostingEnvironment)
+        private readonly List<ResourceModel> _resources = new List<ResourceModel>();
+        private readonly string _path;
+        internal JsonFileProcessor(string path)
         {
-           // _hostingEnvironment = hostingEnvironment;
+            _path = path;
+            ProcessDirectory();
+            _r = new LangBag(this);
         }
-         
-        /// <summary>
-        /// Process file directory and result culture list
-        /// </summary>
-        /// <param name="targetDirectory">path</param>
-        /// <returns>return file culture info</returns>
-        public List<CultureModel> CultureProcessDirectory(string targetDirectory)
+
+        private readonly LangBag _r;
+        public dynamic R => _r;
+
+        public string this[string key] => GetResource(key);
+
+        public string this[string resource, string key] => GetResource(resource, key);
+
+        public string this[string resource, string key, string culture] => GetResource(resource, key, culture);
+
+        /// <inheritdoc/>
+        public string GetResource(string resource, string key, string culture)
         {
-            var result = new List<CultureModel>(); 
-           // targetDirectory = FullPath(targetDirectory);
+            resource = resource.ToLower();
+            key = key.ToLower();
+            culture = culture.ToLower();
+
+            var res = _resources.FirstOrDefault(r => r.Key == resource);
+
+            if(res?.Resources == null)
+                return string.Empty;
             
-            foreach (var path in ProcessDirectory(targetDirectory))
-            { 
-                foreach (var file in GetFiles(path))
-                {
-                    var exp = Path.GetFileName(file)?.Split(new[] { "." }, StringSplitOptions.RemoveEmptyEntries);
-                    if (exp != null && exp.Length==3)
-                    { 
-                        var culture = exp[1];
-                        var align = exp[2];
-                        if (result.All(t => t.CultureName != culture))
-                        {
-                            result.Add(new CultureModel {CultureName = culture,Alignment = align});
-                        }
-                    }
-                }
-            }
-            return result;
+            if (!res.Resources.ContainsKey(key))
+                return string.Empty;
+
+            var item = res.Resources[key];
+
+            return !res.Cultures?.ContainsKey(culture)??true
+                ? item.FirstOrDefault().Value
+                : item[culture];
         }
-         
-        /// <summary>
-        /// Process file directory
-        /// </summary>
-        /// <param name="targetDirectory">path</param>
-        /// <returns>return file resource info</returns>
-        public Dictionary<string, Dictionary<string, string>> FilesProcessDirectory(string targetDirectory)
+
+        /// <inheritdoc/>
+        public string GetResource(string resource, string key)
         {
-            var result = new Dictionary<string, Dictionary<string, string>>(); 
-           // targetDirectory = FullPath(targetDirectory);
-            foreach (var path in ProcessDirectory(targetDirectory))
+            var culture = Thread.CurrentThread.CurrentCulture.Name;
+            return GetResource(resource, key, culture);
+        }
+
+        /// <inheritdoc/>
+        public string GetResource(string key)
+        {
+            var r = key.Split('.');
+            return r.Length < 2
+                ? string.Empty
+                : GetResource(r[0], r[1]);
+        }
+
+        /// <inheritdoc/>
+        public IReadOnlyList<string> GetCultures(string resource)
+        {
+            resource = resource.ToLower();
+
+            var res = _resources.FirstOrDefault(r => r.Key == resource);
+            if (res == null)
+                return new List<string>();
+
+            return res
+                .Cultures?
+                .Select(k => k.Key)
+                .ToList()
+                .AsReadOnly();
+        }
+
+        public void AddResourceLanguage(string resource, string culture, bool isRtl, Dictionary<string, string> data)
+        {
+            resource = resource.ToLower();
+            culture = culture.ToLower();
+
+            var fileName = GetFileName(resource, culture, isRtl ? "rtl" : "ltr");
+
+            var resItem = _resources.FirstOrDefault(r => r.Key == resource);
+            if (resItem == null)
+                return;
+
+            var filePath = Path.Combine(resItem.Path, fileName);
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(data));
+            Reload();
+        }
+
+        public void Reload()
+        {
+            ProcessDirectory();
+        }
+
+        #region Private methods
+
+        /// <summary>
+        /// Process directory in path
+        /// </summary>
+        private void ProcessDirectory()
+        {
+            foreach (var path in ProcessDirectory(_path))
             {
-                foreach (var file in ProcessDirectoryFiles(path))
-                {
-                    var res = GetContentFile(file);
-                    result = ConvertToResourceModel(result, res.Item1, res.Item2, res.Item3);
-                }
+                ProcessFiles(path);
             }
-            return result;
         }
 
         /// <summary>
-        /// Process all files in the directory passed in, recurse on any directories 
-        /// that are found, and process the files they contain.
+        /// Process all files in the directory passed in and process the files they contain
         /// </summary>
-        /// <param name="targetDirectory"></param>
-        /// <returns></returns>
-        public IEnumerable<string> ProcessDirectoryFiles(string targetDirectory)
+        /// <param name="path">Path for process</param>
+        private void ProcessFiles(string path)
         {
-            // Process the list of files found in the directory.
-            var fileEntries = GetFiles(targetDirectory);
-            foreach (string fileName in fileEntries)
-                yield return ProcessFile(fileName);
+            var name = Path.GetFileName(path);
+            if (string.IsNullOrWhiteSpace(name))
+                return;
+
+            var res = new ResourceModel
+            {
+                Key = name.ToLower(),
+                Path = path,
+                Cultures = new Dictionary<string, bool>(),
+                Resources = new Dictionary<string, Dictionary<string, string>>()
+            };
+
+            foreach (var file in GetFiles(path))
+            {
+                var exp = Path
+                    .GetFileName(file)?
+                    .Split(new[] { "." }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (exp == null || exp.Length != 4)
+                {
+                    continue;
+                }
+
+                var culture = exp[1].ToLower();
+                var align = exp[2].ToLower();
+
+                if (!res.Cultures.ContainsKey(culture))
+                {
+                    res.Cultures.Add(culture, align == "rtl");
+                }
+
+                ProcessFileContent(file, culture, res.Resources);
+            }
+
+            _resources.Add(res);
+        }
+
+        /// <summary>
+        /// process file content in path and convert to resource model
+        /// </summary>
+        /// <param name="path">path of file</param>
+        /// <param name="culture">culture</param>
+        /// <param name="resource">current resources</param>
+        private void ProcessFileContent(string path, string culture,
+            IDictionary<string, Dictionary<string, string>> resource)
+        {
+            var jsonData = File.ReadAllText(path);
+            var items = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonData);
+
+            foreach (var item in items)
+            {
+                var key = item.Key.ToLower();
+                if (resource.ContainsKey(key))
+                {
+                    var resItems = resource[key];
+                    if (resItems.ContainsKey(culture))
+                    {
+                        continue;
+                    }
+
+                    resItems.Add(culture, item.Value);
+                }
+                else
+                {
+                    resource.Add(key,
+                        new Dictionary<string, string>()
+                        {
+                            {culture, item.Value}
+                        });
+                }
+            }
         }
 
         /// <summary>
@@ -87,9 +202,9 @@ namespace F4ST.MultiLang
         /// </summary>
         /// <param name="targetDirectory"></param>
         /// <returns></returns>
-        public IEnumerable<string> GetFiles(string targetDirectory)
+        private IEnumerable<string> GetFiles(string targetDirectory)
         {
-             return Directory.GetFiles(targetDirectory);
+            return Directory.GetFiles(targetDirectory);
         }
 
         /// <summary>
@@ -97,95 +212,14 @@ namespace F4ST.MultiLang
         /// </summary>
         /// <param name="targetDirectory"></param>
         /// <returns></returns>
-        public List<string> ProcessDirectory(string targetDirectory)
-        { 
+        private IEnumerable<string> ProcessDirectory(string targetDirectory)
+        {
             // Recurse into subdirectories of this directory.
-            if (!Directory.Exists(targetDirectory)) return new List<string>();
-            return  Directory.GetDirectories(targetDirectory).ToList(); 
+            if (!Directory.Exists(targetDirectory))
+                return new List<string>();
+
+            return Directory.GetDirectories(targetDirectory);
         }
-
-        /// <summary>
-        /// Insert logic for processing found files here.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public string ProcessFile(string path)
-        {
-            return path;
-        }
-
-        /// <summary>
-        /// process file content in directory
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns>return culture & filename & file content </returns>
-        public (string, string, string) GetContentFile(string path)
-        {
-            var exp = Path.GetFileName(path)?.Split(new []{"."},StringSplitOptions.RemoveEmptyEntries);
-            if (exp != null && exp.Length==3)
-            {
-                var key = exp[0];
-                var culture = exp[1];
-                var jsonData = System.IO.File.ReadAllText(path);
-                return (culture, key, jsonData);
-            }
-            return (null, null, null);
-        }
-
-        private Dictionary<string, Dictionary<string, string>> ConvertToResourceModel(
-            Dictionary<string, Dictionary<string, string>> result,
-            string culture,
-            string resourceName,
-            string jsonData)
-        {
-
-            var resources = JsonConvert.DeserializeObject<List<ResourceModel>>(jsonData);
-            foreach (var source in resources)
-            {
-                var cultureDic = new Dictionary<string, string>();
-                cultureDic.Add(culture, source.Value);
-
-                if (result.ContainsKey(source.Key) && !result[source.Key].ContainsKey(culture))
-                    result[source.Key].Add(culture, source.Value);
-                else
-                    result.Add(source.Key, cultureDic);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// create resource file in directory
-        /// </summary>
-        /// <param name="path">path</param>
-        /// <param name="resourceName">resourceName</param>
-        /// <param name="culture">culture</param>
-        /// <param name="alignment">ltr/rtl</param> 
-        public async Task CreateFileProccess(string path, string resourceName, string culture,string alignment, List<ResourceModel> data)
-        {
-            var root = FullPath(path);
-            var fileName = GetFileName(resourceName, culture,alignment);
-            var directory = Path.Combine(root, fileName);
-            var isExist = File.Exists(directory);
-            if (isExist)
-                File.WriteAllText(directory,string.Empty);
-            
-            using (var outputFile = new StreamWriter(directory, isExist))
-            {
-                var json = JsonConvert.SerializeObject(data);
-                await outputFile.WriteAsync(json);
-            }
-        }
-
-        /// <summary>
-        /// Returns the absolute path for the specified path string.
-        /// </summary>
-        /// <param name="directory">directory</param>
-        /// <returns>Returns the absolute path for the specified path string.</returns>
-        public string FullPath(string directory)
-        { 
-            return Environment.CurrentDirectory+ directory; 
-        }
-         
 
         /// <summary>
         /// create file name 
@@ -194,10 +228,13 @@ namespace F4ST.MultiLang
         /// <param name="culture">culture</param>
         /// <param name="alignment">ltr/rtl</param>
         /// <returns>file name</returns>
-        public string GetFileName(string resourceName, string culture, string alignment)
+        private string GetFileName(string resourceName, string culture, string alignment)
         {
             return $"{resourceName}.{culture}.{alignment}.json";
         }
-          
+
+        #endregion
+
+
     }
 }

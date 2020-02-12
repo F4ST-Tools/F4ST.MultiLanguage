@@ -1,12 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework> 
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>Multi resouce file functionality for F4ST</Description>
+    <Product>F4ST</Product>
+    <version>1.1.0</version>
+    <Authors>https://github.com/F4ST-Tools/</Authors>
+    <Company>https://github.com/F4ST-Tools/</Company>
     <License>https://opensource.org/licenses/AGPL-3.0</License>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageDescription>Multi Language functionality for F4ST</PackageDescription> 
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageDescription>Multi resouce file functionality for F4ST</PackageDescription>
+    <RepositoryUrl>https://github.com/F4ST-Tools/F4ST.MultiLanguage</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using F4ST.Common.Containers;
+using F4ST.MultiLang;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -25,6 +26,9 @@ namespace Test
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+
+            var resources = ResourcesProcessor.Get(System.Environment.CurrentDirectory + "\\Resources");
+            services.AddSingleton(resources);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

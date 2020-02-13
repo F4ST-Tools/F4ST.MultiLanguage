@@ -14,8 +14,4 @@
     <RepositoryUrl>https://github.com/F4ST-Tools/F4ST.MultiLanguage</RepositoryUrl>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="F4ST.Common" Version="1.0.10" />
-  </ItemGroup>
-
 </Project>

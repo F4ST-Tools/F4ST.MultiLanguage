@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace F4ST.MultiLang
 {
-    public interface IJsonFileProcessor : ISingleton
+    public interface IJsonFileProcessor
     {
         dynamic R { get; }
 

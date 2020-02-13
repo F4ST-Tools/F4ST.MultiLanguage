@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="f4st.common" Version="1.0.16" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\F4ST.MultiLang\F4ST.MultiLang.csproj" />
   </ItemGroup>
 
